@@ -4,14 +4,14 @@ import { ensureLoggedOut, newToken } from "~/getters/getToken";
 import { getUserByEmail } from "~/getters/getUser";
 import { createLoader } from "~/getters/responseHelpers";
 
-export const loader = createLoader(async (req) => {
-  await ensureLoggedOut(req);
+export const loader = createLoader(async (args) => {
+  await ensureLoggedOut(args);
   return null;
 });
 
-export const action = createLoader(async (req) => {
-  await ensureLoggedOut(req);
-  const { email = "" } = await getFormData<"email">(req);
+export const action = createLoader(async (args) => {
+  await ensureLoggedOut(args);
+  const { email = "" } = await getFormData<"email">(args);
   const user = await getUserByEmail(email);
 
   if (!user) {
@@ -30,7 +30,7 @@ export const action = createLoader(async (req) => {
   });
 });
 
-export default function Index() {
+export default function LoginRoute() {
   return (
     <form method="post">
       <input name="email" />

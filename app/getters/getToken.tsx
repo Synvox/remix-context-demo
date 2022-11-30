@@ -1,4 +1,4 @@
-import { redirect } from "@remix-run/node";
+import { DataFunctionArgs, redirect } from "@remix-run/node";
 import cookie from "cookie";
 import { read, create } from "~/jwt";
 import knex from "~/knex";
@@ -20,9 +20,9 @@ export type UserToken = {
   revokedAt: string | null;
 };
 
-export const getJwt = createGetter(async (req) => {
+export const getJwt = createGetter(async ({ request }) => {
   const { [sessionCookieName]: jwt } = cookie.parse(
-    req.headers.get("Cookie") ?? ""
+    request.headers.get("Cookie") ?? ""
   );
 
   const body = jwt ? await read<TokenBody>(jwt) : { userTokenId: undefined };
@@ -30,10 +30,10 @@ export const getJwt = createGetter(async (req) => {
   return { jwt, body };
 });
 
-export const getToken = createGetter(async (req) => {
+export const getToken = createGetter(async (args) => {
   const {
     body: { userTokenId },
-  } = await getJwt(req);
+  } = await getJwt(args);
 
   const loginRedirect = redirect("/login");
 
@@ -49,30 +49,13 @@ export const getToken = createGetter(async (req) => {
   return userToken;
 });
 
-export const renewToken = createGetter(async (req) => {
-  const { body } = await getJwt(req);
-  const { exp: _exp, iat: _iat, ...payload } = body;
-
-  const headers = getResponseHeaders(req);
-
-  headers.set(
-    "Set-Cookie",
-    cookie.serialize(
-      sessionCookieName,
-      await create({
-        ...payload,
-      })
-    )
-  );
-});
-
-export async function ensureLoggedIn(request: Request) {
-  await getToken(request);
+export async function ensureLoggedIn(args: DataFunctionArgs) {
+  await getToken(args);
 }
 
-export async function ensureLoggedOut(request: Request) {
+export async function ensureLoggedOut(args: DataFunctionArgs) {
   try {
-    await getToken(request);
+    await getToken(args);
   } catch (e) {
     if (!(e instanceof Response)) throw e;
     return;

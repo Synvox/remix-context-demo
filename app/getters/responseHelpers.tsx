@@ -4,30 +4,20 @@ import {
   json,
   TypedResponse,
 } from "@remix-run/node";
-import { Params } from "@remix-run/react";
-import { createGetter, setRequestContext } from "./createGetter";
+import { createGetter } from "./createGetter";
 
 export const getResponseHeaders = createGetter((_req) => {
   return new Headers();
 });
 
-const paramsWeakMap = new WeakMap<Request, Params>();
-
-export function getParams(request: Request) {
-  return paramsWeakMap.get(request)!;
-}
-
 function createDataFunction<T>(
-  fn: (request: Request) => Promise<TypedResponse<T> | AppData>
+  fn: (args: DataFunctionArgs) => Promise<TypedResponse<T> | AppData>
 ) {
   return async function (args: DataFunctionArgs) {
-    paramsWeakMap.set(args.request, args.params);
-    setRequestContext(args.request, args.context);
-
     let result: TypedResponse<T> | undefined = undefined;
 
     try {
-      result = await fn(args.request);
+      result = await fn(args);
     } catch (e) {
       if (e instanceof Response) result = e;
       else throw e;
@@ -35,7 +25,7 @@ function createDataFunction<T>(
 
     if (!(result instanceof Response)) result = json(result);
 
-    const headers = getResponseHeaders(args.request);
+    const headers = getResponseHeaders(args);
     for (let [key, value] of result.headers) headers.set(key, value);
 
     return new Response(result.body, {

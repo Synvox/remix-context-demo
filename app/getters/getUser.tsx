@@ -9,8 +9,8 @@ export type User = {
   lastName: string;
 };
 
-export const getUser = createGetter(async (req) => {
-  const token = await getToken(req);
+export const getUser = createGetter(async (args) => {
+  const token = await getToken(args);
 
   const user = await knex<User>("users").where("id", token.userId).first();
 

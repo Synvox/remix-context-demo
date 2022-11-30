@@ -1,11 +1,12 @@
+import { DataFunctionArgs } from "@remix-run/node";
 import { createGetter } from "./createGetter";
 
 type GetFormData = <T extends string>(
-  request: Request
+  args: DataFunctionArgs
 ) => Promise<Record<T, string | undefined>>;
 
-export const getFormData: GetFormData = createGetter(async (req) => {
-  const entries = [...(await req.formData()).entries()];
+export const getFormData: GetFormData = createGetter(async ({ request }) => {
+  const entries = [...(await request.formData()).entries()];
 
   const stringValueEntries = entries.map(([key, value]) => [
     key,

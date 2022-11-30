@@ -1,16 +1,19 @@
+import { DataFunctionArgs } from "@remix-run/node";
 import { createGetter } from "./createGetter";
 
 type GetQueryParams = <T extends string>(
-  request: Request
+  args: DataFunctionArgs
 ) => Promise<Record<T, string | undefined>>;
 
-export const getQueryParams: GetQueryParams = createGetter(async (req) => {
-  const entries = [...new URL(req.url).searchParams.entries()];
+export const getQueryParams: GetQueryParams = createGetter(
+  async ({ request }) => {
+    const entries = [...new URL(request.url).searchParams.entries()];
 
-  const stringValueEntries = entries.map(([key, value]) => [
-    key,
-    String(value),
-  ]);
+    const stringValueEntries = entries.map(([key, value]) => [
+      key,
+      String(value),
+    ]);
 
-  return Object.fromEntries(stringValueEntries);
-});
+    return Object.fromEntries(stringValueEntries);
+  }
+);
