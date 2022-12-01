@@ -1,9 +1,8 @@
 import { DataFunctionArgs, redirect } from "@remix-run/node";
 import cookie from "cookie";
-import { read, create } from "~/jwt";
+import { create, read } from "~/jwt";
 import knex from "~/knex";
 import { createGetter } from "./createGetter";
-import { getResponseHeaders } from "./responseHelpers";
 
 const sessionCookieName = "SessionToken";
 
@@ -64,7 +63,7 @@ export async function ensureLoggedOut(args: DataFunctionArgs) {
   throw redirect("/");
 }
 
-export async function newToken(userId: number) {
+export async function newSessionCookie(userId: number) {
   const [userToken] = await knex("userTokens")
     .insert({ userId })
     .returning("*");

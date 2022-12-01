@@ -1,14 +1,14 @@
-import { createLoader } from "~/getters/responseHelpers";
+import { LoaderArgs } from "@remix-run/node";
+import { ensureLoggedIn } from "~/getters/getToken";
 import { useUser } from "~/hooks/useUser";
-import { guard } from "../__main";
 
-export const loader = createLoader(async (args) => {
-  await guard(args); // maybe handled by the framework
+export async function loader(args: LoaderArgs) {
+  await ensureLoggedIn(args);
   return null;
-});
+}
 
 export default function SubRouteIndex() {
   const user = useUser();
 
-  return <div>{user.email}</div>;
+  return <div>Welcome {user.email}</div>;
 }

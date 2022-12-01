@@ -26,6 +26,7 @@ export function createGetter<T>(fn: GetterFn<T>) {
   );
 }
 
+// could also use symbols
 export function createSymbolGetter<T>(fn: GetterFn<T>) {
   let symbol = Symbol();
 

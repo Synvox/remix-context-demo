@@ -1,22 +1,19 @@
-import { json, redirect } from "@remix-run/node";
-import { createGuard } from "~/getters/createGuard";
+import { json, LoaderArgs, redirect } from "@remix-run/node";
 import { getFormData } from "~/getters/getFormData";
-import { ensureLoggedOut, newToken } from "~/getters/getToken";
+import {
+  ensureLoggedOut,
+  newSessionCookie as createSessionCookie,
+} from "~/getters/getToken";
 import { getUserByEmail } from "~/getters/getUser";
-import { createLoader } from "~/getters/responseHelpers";
 
-export const guard = createGuard(async (args) => {
+export async function loader(args: LoaderArgs) {
   await ensureLoggedOut(args);
-});
-
-export const loader = createLoader(async (args) => {
-  await guard(args);
 
   return null;
-});
+}
 
-export const action = createLoader(async (args) => {
-  await guard(args);
+export async function action(args: LoaderArgs) {
+  await ensureLoggedOut(args);
 
   const { email = "" } = await getFormData<"email">(args);
   const user = await getUserByEmail(email);
@@ -32,10 +29,10 @@ export const action = createLoader(async (args) => {
 
   return redirect("/", {
     headers: {
-      "Set-Cookie": await newToken(user.id),
+      "Set-Cookie": await createSessionCookie(user.id),
     },
   });
-});
+}
 
 export default function LoginRoute() {
   return (
