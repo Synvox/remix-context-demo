@@ -1,16 +1,23 @@
 import { json, redirect } from "@remix-run/node";
+import { createGuard } from "~/getters/createGuard";
 import { getFormData } from "~/getters/getFormData";
 import { ensureLoggedOut, newToken } from "~/getters/getToken";
 import { getUserByEmail } from "~/getters/getUser";
 import { createLoader } from "~/getters/responseHelpers";
 
-export const loader = createLoader(async (args) => {
+export const guard = createGuard(async (args) => {
   await ensureLoggedOut(args);
+});
+
+export const loader = createLoader(async (args) => {
+  await guard(args);
+
   return null;
 });
 
 export const action = createLoader(async (args) => {
-  await ensureLoggedOut(args);
+  await guard(args);
+
   const { email = "" } = await getFormData<"email">(args);
   const user = await getUserByEmail(email);
 
