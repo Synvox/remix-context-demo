@@ -1,53 +1,159 @@
-# Welcome to Remix!
+# Remix context demo
 
-- [Remix Docs](https://remix.run/docs)
+A brief example of reusable context in remix to solve the middleware problem.
 
-## Development
+## Running
 
-From your terminal:
-
-```sh
+```
+npm i
+# Assuming you have postgres running
+createdb remix_context_demo
 npm run dev
 ```
 
-This starts your app in development mode, rebuilding assets on file changes.
+## Associating the results of async functions with some sort of context object
 
-## Deployment
+### Using properties
 
-First, build your app for production:
+```js
+let req = {};
 
-```sh
-npm run build
+let user = {
+  id: 1,
+  name: "Ryan",
+};
+
+req.user = user;
+
+console.log(req.user);
 ```
 
-Then run the app in production mode:
+### Using Symbol
 
-```sh
-npm start
+```js
+let req = {};
+let symbol = Symbol();
+
+let user = {
+  id: 1,
+  name: "Ryan",
+};
+
+req[symbol] = user;
+
+function getUser(req) {
+  return req[symbol];
+}
+
+console.log(getUser(req));
 ```
 
-Now you'll need to pick a host to deploy it to.
+### Using WeakMap
 
-### DIY
+```js
+let req = {};
 
-If you're familiar with deploying node applications, the built-in Remix app server is production-ready.
+let user = {
+  id: 1,
+  name: "Ryan",
+};
 
-Make sure to deploy the output of `remix build`
+let weakMap = new WeakMap();
+weakMap.set(req, user);
 
-- `build/`
-- `public/build/`
+function getUser(req) {
+  return weakMap.get(req);
+}
 
-### Using a Template
+console.log(getUser(req));
+```
 
-When you ran `npx create-remix@latest` there were a few choices for hosting. You can run that again to create a new project, then copy over your `app/` folder to the new project that's pre-configured for your target server.
+### Reducing Calls
 
-```sh
-cd ..
-# create a new project, and pick a pre-configured host
-npx create-remix@latest
-cd my-new-remix-app
-# remove the new project's app (not the old one!)
-rm -rf app
-# copy your app over
-cp -R ../my-old-remix-app/app app
+```js
+let req = {};
+
+function createGetter(fn) {
+  let weakMap = new WeakMap();
+
+  return function (request) {
+    if (weakMap.has(request)) {
+      return weakMap.get(request);
+    }
+
+    let result = fn(request);
+    weakMap.set(request, result);
+
+    return result;
+  };
+}
+
+// wrap with createGetter
+let getUser = (req) => {
+  console.log("got user");
+  // do something to get the user
+  let user = {
+    id: 1,
+    name: "Ryan",
+  };
+
+  return user;
+};
+
+console.log(getUser(req));
+console.log(getUser(req));
+```
+
+### Still works with async
+
+```js
+let req = {};
+
+function createGetter(fn) {
+  let weakMap = new WeakMap();
+
+  return function (request) {
+    if (weakMap.has(request)) {
+      return weakMap.get(request);
+    }
+
+    let result = fn(request);
+    weakMap.set(request, result);
+
+    return result;
+  };
+}
+
+let sleep = (time) => new Promise((r) => setTimeout(r, time));
+
+// wrap with createGetter
+let getUser = async (req) => {
+  await sleep(200);
+
+  console.log("got user");
+  // do something to get the user
+  let user = {
+    id: 1,
+    name: "Ryan",
+  };
+
+  return user;
+};
+
+async function loader(req) {
+  let user = await getUser(req);
+  return user;
+}
+
+let [user1, user2] = await Promise.all([loader(req), loader(req)]);
+
+console.log(user1, user2);
+console.log(user1 === user2);
+
+let before = Date.now();
+let user3 = await getUser(req);
+let after = Date.now();
+
+console.log(`${after - before}ms`);
+console.log(getUser(req));
 ```
